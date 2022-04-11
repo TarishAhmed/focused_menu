@@ -2,6 +2,7 @@ library focused_menu;
 
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:focused_menu/modals.dart';
 
 class FocusedMenuHolder extends StatefulWidget {
@@ -9,6 +10,7 @@ class FocusedMenuHolder extends StatefulWidget {
   final double? menuItemExtent;
   final double? menuWidth;
   final List<FocusedMenuItem> menuItems;
+  final List<FocusedMenuItem> secondaryMenuItems;
   final bool? animateMenuItems;
   final BoxDecoration? menuBoxDecoration;
   final Function onPressed;
@@ -18,6 +20,7 @@ class FocusedMenuHolder extends StatefulWidget {
   final double? bottomOffsetHeight;
   final double? menuOffset;
   final double? maxMenuHeight;
+  final FocusedMenuPages? jumpToPage;
 
   /// Open with tap insted of long press.
   final bool openWithTap;
@@ -27,6 +30,7 @@ class FocusedMenuHolder extends StatefulWidget {
       required this.child,
       required this.onPressed,
       required this.menuItems,
+      required this.secondaryMenuItems,
       this.duration,
       this.menuBoxDecoration,
       this.menuItemExtent,
@@ -37,7 +41,8 @@ class FocusedMenuHolder extends StatefulWidget {
       this.bottomOffsetHeight,
       this.menuOffset,
       this.maxMenuHeight,
-      this.openWithTap = false})
+      this.openWithTap = false,
+      this.jumpToPage})
       : super(key: key);
 
   @override
@@ -89,6 +94,7 @@ class _FocusedMenuHolderState extends State<FocusedMenuHolder> {
               return FadeTransition(
                   opacity: animation,
                   child: FocusedMenuDetails(
+                    jumpToPage: widget.jumpToPage,
                     maxMenuHeight: widget.maxMenuHeight,
                     itemExtent: widget.menuItemExtent,
                     menuBoxDecoration: widget.menuBoxDecoration,
@@ -96,6 +102,7 @@ class _FocusedMenuHolderState extends State<FocusedMenuHolder> {
                     childOffset: childOffset,
                     childSize: childSize,
                     menuItems: widget.menuItems,
+                    secondaryMenuItems: widget.secondaryMenuItems,
                     blurSize: widget.blurSize,
                     menuWidth: widget.menuWidth,
                     blurBackgroundColor: widget.blurBackgroundColor,
@@ -109,8 +116,11 @@ class _FocusedMenuHolderState extends State<FocusedMenuHolder> {
   }
 }
 
-class FocusedMenuDetails extends StatelessWidget {
+enum FocusedMenuPages { first, second }
+
+class FocusedMenuDetails extends StatefulWidget {
   final List<FocusedMenuItem> menuItems;
+  final List<FocusedMenuItem>? secondaryMenuItems;
   final BoxDecoration? menuBoxDecoration;
   final Offset childOffset;
   final double? itemExtent;
@@ -123,8 +133,8 @@ class FocusedMenuDetails extends StatelessWidget {
   final double? bottomOffsetHeight;
   final double? menuOffset;
   final double? maxMenuHeight;
-
-  const FocusedMenuDetails(
+  final FocusedMenuPages? jumpToPage;
+  FocusedMenuDetails(
       {Key? key,
       required this.menuItems,
       required this.child,
@@ -138,26 +148,66 @@ class FocusedMenuDetails extends StatelessWidget {
       required this.menuWidth,
       this.bottomOffsetHeight,
       this.menuOffset,
-      this.maxMenuHeight})
+      this.maxMenuHeight,
+      this.secondaryMenuItems,
+      this.jumpToPage})
       : super(key: key);
+
+  @override
+  State<FocusedMenuDetails> createState() => _FocusedMenuDetailsState();
+}
+
+class _FocusedMenuDetailsState extends State<FocusedMenuDetails> {
+  final PageController _pageController = PageController(initialPage: 0);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance?.addPostFrameCallback((_) {
+      if (_pageController.hasClients && widget.secondaryMenuItems != null) {
+        _pageController.animateToPage(widget.jumpToPage!.index,
+            duration: Duration(milliseconds: 400), curve: Curves.easeInOut);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
 
-    final maxMenuHeight = this.maxMenuHeight ?? size.height * 0.45;
-    final listHeight = menuItems.map((e) => e.menuItemHeight).reduce(
-        (a, b) => (a ?? itemExtent ?? 50.0) + (b ?? itemExtent ?? 50.0)) ?? menuItems.length * (itemExtent ?? 50.0);
+    final maxMenuHeight = this.widget.maxMenuHeight ?? size.height * 0.45;
+    final listHeight = widget.menuItems.map((e) => e.menuItemHeight).reduce(
+            (a, b) =>
+                (a ?? widget.itemExtent ?? 50.0) +
+                (b ?? widget.itemExtent ?? 50.0)) ??
+        widget.menuItems.length * (widget.itemExtent ?? 50.0);
+    double listHeight2 = 0;
+    if (widget.secondaryMenuItems != null) {
+      listHeight2 = widget.secondaryMenuItems!
+              .map((e) => e.menuItemHeight)
+              .reduce((a, b) =>
+                  (a ?? widget.itemExtent ?? 50.0) +
+                  (b ?? widget.itemExtent ?? 50.0)) ??
+          widget.menuItems.length * (widget.itemExtent ?? 50.0);
+    }
 
-    final maxMenuWidth = menuWidth ?? (size.width * 0.70);
+    final maxMenuWidth = widget.menuWidth ?? (size.width * 0.70);
     final menuHeight = listHeight < maxMenuHeight ? listHeight : maxMenuHeight;
-    final leftOffset = (childOffset.dx + maxMenuWidth) < size.width
-        ? childOffset.dx
-        : (childOffset.dx - maxMenuWidth + childSize!.width);
-    final topOffset = (childOffset.dy + menuHeight + childSize!.height) <
-            size.height - bottomOffsetHeight!
-        ? childOffset.dy + childSize!.height + menuOffset!
-        : childOffset.dy - menuHeight - menuOffset!;
+    final leftOffset = (widget.childOffset.dx + maxMenuWidth) < size.width
+        ? widget.childOffset.dx
+        : (widget.childOffset.dx - maxMenuWidth + widget.childSize!.width);
+    final topOffset = (widget.childOffset.dy +
+                menuHeight +
+                widget.childSize!.height) <
+            size.height - widget.bottomOffsetHeight!
+        ? widget.childOffset.dy + widget.childSize!.height + widget.menuOffset!
+        : widget.childOffset.dy - menuHeight - widget.menuOffset!;
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
@@ -170,10 +220,11 @@ class FocusedMenuDetails extends StatelessWidget {
                 },
                 child: BackdropFilter(
                   filter: ImageFilter.blur(
-                      sigmaX: blurSize ?? 4, sigmaY: blurSize ?? 4),
+                      sigmaX: widget.blurSize ?? 4,
+                      sigmaY: widget.blurSize ?? 4),
                   child: Container(
-                    color:
-                        (blurBackgroundColor ?? Colors.black).withOpacity(0.7),
+                    color: (widget.blurBackgroundColor ?? Colors.black)
+                        .withOpacity(0.7),
                   ),
                 )),
             Positioned(
@@ -192,7 +243,7 @@ class FocusedMenuDetails extends StatelessWidget {
                 child: Container(
                   width: maxMenuWidth,
                   height: menuHeight,
-                  decoration: menuBoxDecoration ??
+                  decoration: widget.menuBoxDecoration ??
                       BoxDecoration(
                           color: Colors.grey.shade200,
                           borderRadius:
@@ -205,67 +256,130 @@ class FocusedMenuDetails extends StatelessWidget {
                           ]),
                   child: ClipRRect(
                     borderRadius: const BorderRadius.all(Radius.circular(5.0)),
-                    child: ListView.builder(
-                      itemCount: menuItems.length,
-                      padding: EdgeInsets.zero,
-                      physics: BouncingScrollPhysics(),
-                      itemBuilder: (context, index) {
-                        FocusedMenuItem item = menuItems[index];
-                        Widget listItem = GestureDetector(
-                            onTap: () {
-                              Navigator.pop(context);
-                              item.onPressed();
+                    child: PageView(
+                        controller: _pageController,
+                        physics: NeverScrollableScrollPhysics(),
+                        children: [
+                          ListView.builder(
+                            itemCount: widget.menuItems.length,
+                            padding: EdgeInsets.zero,
+                            physics: BouncingScrollPhysics(),
+                            itemBuilder: (context, index) {
+                              FocusedMenuItem item = widget.menuItems[index];
+                              Widget listItem = GestureDetector(
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    item.onPressed();
+                                  },
+                                  child: Container(
+                                      alignment: Alignment.center,
+                                      margin: const EdgeInsets.only(bottom: 1),
+                                      color:
+                                          item.backgroundColor ?? Colors.white,
+                                      height: item.menuItemHeight ??
+                                          widget.itemExtent ??
+                                          50.0,
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 8.0, horizontal: 14),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: <Widget>[
+                                            item.title,
+                                            if (item.trailingIcon != null) ...[
+                                              item.trailingIcon!
+                                            ]
+                                          ],
+                                        ),
+                                      )));
+                              if (widget.animateMenu) {
+                                return TweenAnimationBuilder(
+                                    builder: (context, dynamic value, child) {
+                                      return Transform(
+                                        transform:
+                                            Matrix4.rotationX(1.5708 * value),
+                                        alignment: Alignment.bottomCenter,
+                                        child: child,
+                                      );
+                                    },
+                                    tween: Tween(begin: 1.0, end: 0.0),
+                                    duration:
+                                        Duration(milliseconds: index * 200),
+                                    child: listItem);
+                              } else {
+                                return listItem;
+                              }
                             },
-                            child: Container(
-                                alignment: Alignment.center,
-                                margin: const EdgeInsets.only(bottom: 1),
-                                color: item.backgroundColor ?? Colors.white,
-                                height:
-                                    item.menuItemHeight ?? itemExtent ?? 50.0,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 8.0, horizontal: 14),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: <Widget>[
-                                      item.title,
-                                      if (item.trailingIcon != null) ...[
-                                        item.trailingIcon!
-                                      ]
-                                    ],
-                                  ),
-                                )));
-                        if (animateMenu) {
-                          return TweenAnimationBuilder(
-                              builder: (context, dynamic value, child) {
-                                return Transform(
-                                  transform: Matrix4.rotationX(1.5708 * value),
-                                  alignment: Alignment.bottomCenter,
-                                  child: child,
-                                );
+                          ),
+                          if (widget.secondaryMenuItems != null)
+                            ListView.builder(
+                              itemCount: widget.secondaryMenuItems!.length,
+                              padding: EdgeInsets.zero,
+                              physics: BouncingScrollPhysics(),
+                              itemBuilder: (context, index) {
+                                FocusedMenuItem item =
+                                    widget.secondaryMenuItems![index];
+                                Widget listItem = GestureDetector(
+                                    onTap: () {
+                                      Navigator.pop(context);
+                                      item.onPressed();
+                                    },
+                                    child: Container(
+                                        alignment: Alignment.center,
+                                        margin:
+                                            const EdgeInsets.only(bottom: 1),
+                                        color: item.backgroundColor ??
+                                            Colors.white,
+                                        height: item.menuItemHeight ??
+                                            widget.itemExtent ??
+                                            50.0,
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 8.0, horizontal: 14),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: <Widget>[
+                                              item.title,
+                                              if (item.trailingIcon !=
+                                                  null) ...[item.trailingIcon!]
+                                            ],
+                                          ),
+                                        )));
+                                if (widget.animateMenu) {
+                                  return TweenAnimationBuilder(
+                                      builder: (context, dynamic value, child) {
+                                        return Transform(
+                                          transform:
+                                              Matrix4.rotationX(1.5708 * value),
+                                          alignment: Alignment.bottomCenter,
+                                          child: child,
+                                        );
+                                      },
+                                      tween: Tween(begin: 1.0, end: 0.0),
+                                      duration:
+                                          Duration(milliseconds: index * 200),
+                                      child: listItem);
+                                } else {
+                                  return listItem;
+                                }
                               },
-                              tween: Tween(begin: 1.0, end: 0.0),
-                              duration: Duration(milliseconds: index * 200),
-                              child: listItem);
-                        } else {
-                          return listItem;
-                        }
-                      },
-                    ),
+                            ),
+                        ]),
                   ),
                 ),
               ),
             ),
             Positioned(
-                top: childOffset.dy,
-                left: childOffset.dx,
+                top: widget.childOffset.dy,
+                left: widget.childOffset.dx,
                 child: AbsorbPointer(
                     absorbing: true,
                     child: Container(
-                        width: childSize!.width,
-                        height: childSize!.height,
-                        child: child))),
+                        width: widget.childSize!.width,
+                        height: widget.childSize!.height,
+                        child: widget.child))),
           ],
         ),
       ),
