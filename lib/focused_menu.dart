@@ -147,7 +147,7 @@ class FocusedMenuDetails extends StatelessWidget {
 
     final maxMenuHeight = this.maxMenuHeight ?? size.height * 0.45;
     final listHeight = menuItems.map((e) => e.menuItemHeight).reduce(
-        (a, b) => (a ?? itemExtent ?? 50.0) + (b ?? itemExtent ?? 50.0))!;
+        (a, b) => (a ?? itemExtent ?? 50.0) + (b ?? itemExtent ?? 50.0)) ?? menuItems.length * (itemExtent ?? 50.0);
 
     final maxMenuWidth = menuWidth ?? (size.width * 0.70);
     final menuHeight = listHeight < maxMenuHeight ? listHeight : maxMenuHeight;
