@@ -189,7 +189,7 @@ class FocusedMenuDetails extends StatelessWidget {
                                 alignment: Alignment.center,
                                 margin: const EdgeInsets.only(bottom: 1),
                                 color: item.backgroundColor ?? Colors.white,
-                                height: itemExtent ?? 50.0,
+                                height: item.menuItemHeight ?? itemExtent ?? 50.0,
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 14),
                                   child: Row(
