@@ -10,7 +10,7 @@ class FocusedMenuHolder extends StatefulWidget {
   final double? menuItemExtent;
   final double? menuWidth;
   final List<FocusedMenuItem> menuItems;
-  final List<FocusedMenuItem> secondaryMenuItems;
+  final List<FocusedMenuItem>? secondaryMenuItems;
   final bool? animateMenuItems;
   final BoxDecoration? menuBoxDecoration;
   final Function onPressed;
@@ -30,7 +30,7 @@ class FocusedMenuHolder extends StatefulWidget {
       required this.child,
       required this.onPressed,
       required this.menuItems,
-      required this.secondaryMenuItems,
+      this.secondaryMenuItems,
       this.duration,
       this.menuBoxDecoration,
       this.menuItemExtent,
