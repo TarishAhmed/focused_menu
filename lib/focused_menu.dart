@@ -9,8 +9,7 @@ class FocusedMenuHolder extends StatefulWidget {
   final Widget child;
   final double? menuItemExtent;
   final double? menuWidth;
-  final List<FocusedMenuItem> menuItems;
-  final List<FocusedMenuItem>? secondaryMenuItems;
+  final Widget menuItems;
   final bool? animateMenuItems;
   final BoxDecoration? menuBoxDecoration;
   final Function onPressed;
@@ -21,6 +20,8 @@ class FocusedMenuHolder extends StatefulWidget {
   final double? menuOffset;
   final double? maxMenuHeight;
   final FocusedMenuPages? jumpToPage;
+  final bool disableMenu;
+  final bool allowBothTapLongPress;
 
   /// Open with tap insted of long press.
   final bool openWithTap;
@@ -30,7 +31,6 @@ class FocusedMenuHolder extends StatefulWidget {
       required this.child,
       required this.onPressed,
       required this.menuItems,
-      this.secondaryMenuItems,
       this.duration,
       this.menuBoxDecoration,
       this.menuItemExtent,
@@ -42,7 +42,9 @@ class FocusedMenuHolder extends StatefulWidget {
       this.menuOffset,
       this.maxMenuHeight,
       this.openWithTap = false,
-      this.jumpToPage})
+      this.jumpToPage,
+      this.disableMenu = false,
+      this.allowBothTapLongPress = false})
       : super(key: key);
 
   @override
@@ -69,14 +71,18 @@ class _FocusedMenuHolderState extends State<FocusedMenuHolder> {
   Widget build(BuildContext context) {
     return GestureDetector(
         key: containerKey,
-        onTap: () async {
-          widget.onPressed();
-          if (widget.openWithTap) {
-            await openMenu(context);
-          }
-        },
-        onLongPress: () async {
-          if (!widget.openWithTap) {
+        onTap: widget.disableMenu
+            ? () {}
+            : () async {
+                widget.onPressed();
+                if (widget.openWithTap || (widget.allowBothTapLongPress)) {
+                  await openMenu(context);
+                }
+              },
+        onLongPress: widget.disableMenu
+            ? () {}
+            :() async {
+          if ((!widget.openWithTap) || (widget.allowBothTapLongPress)) {
             await openMenu(context);
           }
         },
@@ -102,7 +108,6 @@ class _FocusedMenuHolderState extends State<FocusedMenuHolder> {
                     childOffset: childOffset,
                     childSize: childSize,
                     menuItems: widget.menuItems,
-                    secondaryMenuItems: widget.secondaryMenuItems,
                     blurSize: widget.blurSize,
                     menuWidth: widget.menuWidth,
                     blurBackgroundColor: widget.blurBackgroundColor,
@@ -119,8 +124,7 @@ class _FocusedMenuHolderState extends State<FocusedMenuHolder> {
 enum FocusedMenuPages { first, second }
 
 class FocusedMenuDetails extends StatefulWidget {
-  final List<FocusedMenuItem> menuItems;
-  final List<FocusedMenuItem>? secondaryMenuItems;
+  final Widget menuItems;
   final BoxDecoration? menuBoxDecoration;
   final Offset childOffset;
   final double? itemExtent;
@@ -149,7 +153,6 @@ class FocusedMenuDetails extends StatefulWidget {
       this.bottomOffsetHeight,
       this.menuOffset,
       this.maxMenuHeight,
-      this.secondaryMenuItems,
       this.jumpToPage})
       : super(key: key);
 
@@ -158,56 +161,44 @@ class FocusedMenuDetails extends StatefulWidget {
 }
 
 class _FocusedMenuDetailsState extends State<FocusedMenuDetails> {
-  final PageController _pageController = PageController(initialPage: 0);
-
+  var widgetKey = GlobalKey();
+  Size? size;
+  Size? sizeOfChild;
+  double? leftOffset;
+  double? topOffset;
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance?.addPostFrameCallback((_) {
-      if (_pageController.hasClients && widget.secondaryMenuItems != null) {
-        _pageController.animateToPage(widget.jumpToPage!.index,
-            duration: Duration(milliseconds: 400), curve: Curves.easeInOut);
-      }
+      Size size = MediaQuery.of(context).size;
+      sizeOfChild = widgetKey.currentContext!.size;
+      leftOffset = (widget.childOffset.dx + sizeOfChild!.width) < size.width
+          ? widget.childOffset.dx
+          : (widget.childOffset.dx -
+              sizeOfChild!.width +
+              widget.childSize!.width);
+      topOffset = (widget.childOffset.dy +
+                  sizeOfChild!.height +
+                  widget.childSize!.height) <
+              size.height - widget.bottomOffsetHeight!
+          ? widget.childOffset.dy +
+              widget.childSize!.height +
+              widget.menuOffset!
+          : widget.childOffset.dy - sizeOfChild!.height - widget.menuOffset!;
     });
   }
 
   @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    Size size = MediaQuery.of(context).size;
+    // List<Widget> currentMenuItems = menuItems;
+    //
+    //
+    // final maxMenuHeight = this.maxMenuHeight ?? size.height * 0.45;
+    // final listHeight = currentMenuItems.length * (itemExtent ?? 50.0);
+    //
+    // final maxMenuWidth = menuWidth ?? (size.width * 0.70);
+    // final menuHeight = listHeight < maxMenuHeight ? listHeight : maxMenuHeight;
 
-    final maxMenuHeight = this.widget.maxMenuHeight ?? size.height * 0.45;
-    final listHeight = widget.menuItems.map((e) => e.menuItemHeight).reduce(
-            (a, b) =>
-                (a ?? widget.itemExtent ?? 50.0) +
-                (b ?? widget.itemExtent ?? 50.0)) ??
-        widget.menuItems.length * (widget.itemExtent ?? 50.0);
-    double listHeight2 = 0;
-    if (widget.secondaryMenuItems != null) {
-      listHeight2 = widget.secondaryMenuItems!
-              .map((e) => e.menuItemHeight)
-              .reduce((a, b) =>
-                  (a ?? widget.itemExtent ?? 50.0) +
-                  (b ?? widget.itemExtent ?? 50.0)) ??
-          widget.menuItems.length * (widget.itemExtent ?? 50.0);
-    }
-
-    final maxMenuWidth = widget.menuWidth ?? (size.width * 0.70);
-    final menuHeight = listHeight < maxMenuHeight ? listHeight : maxMenuHeight;
-    final leftOffset = (widget.childOffset.dx + maxMenuWidth) < size.width
-        ? widget.childOffset.dx
-        : (widget.childOffset.dx - maxMenuWidth + widget.childSize!.width);
-    final topOffset = (widget.childOffset.dy +
-                menuHeight +
-                widget.childSize!.height) <
-            size.height - widget.bottomOffsetHeight!
-        ? widget.childOffset.dy + widget.childSize!.height + widget.menuOffset!
-        : widget.childOffset.dy - menuHeight - widget.menuOffset!;
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
@@ -241,8 +232,8 @@ class _FocusedMenuDetailsState extends State<FocusedMenuDetails> {
                 },
                 tween: Tween(begin: 0.0, end: 1.0),
                 child: Container(
-                  width: maxMenuWidth,
-                  height: menuHeight,
+                  width: widget.childSize!.width,
+                  height: widget.childSize!.height,
                   decoration: widget.menuBoxDecoration ??
                       BoxDecoration(
                           color: Colors.grey.shade200,
@@ -256,117 +247,10 @@ class _FocusedMenuDetailsState extends State<FocusedMenuDetails> {
                           ]),
                   child: ClipRRect(
                     borderRadius: const BorderRadius.all(Radius.circular(5.0)),
-                    child: PageView(
-                        controller: _pageController,
-                        physics: NeverScrollableScrollPhysics(),
-                        children: [
-                          ListView.builder(
-                            itemCount: widget.menuItems.length,
-                            padding: EdgeInsets.zero,
-                            physics: BouncingScrollPhysics(),
-                            itemBuilder: (context, index) {
-                              FocusedMenuItem item = widget.menuItems[index];
-                              Widget listItem = GestureDetector(
-                                  onTap: () {
-                                    Navigator.pop(context);
-                                    item.onPressed();
-                                  },
-                                  child: Container(
-                                      alignment: Alignment.center,
-                                      margin: const EdgeInsets.only(bottom: 1),
-                                      color:
-                                          item.backgroundColor ?? Colors.white,
-                                      height: item.menuItemHeight ??
-                                          widget.itemExtent ??
-                                          50.0,
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 8.0, horizontal: 14),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: <Widget>[
-                                            item.title,
-                                            if (item.trailingIcon != null) ...[
-                                              item.trailingIcon!
-                                            ]
-                                          ],
-                                        ),
-                                      )));
-                              if (widget.animateMenu) {
-                                return TweenAnimationBuilder(
-                                    builder: (context, dynamic value, child) {
-                                      return Transform(
-                                        transform:
-                                            Matrix4.rotationX(1.5708 * value),
-                                        alignment: Alignment.bottomCenter,
-                                        child: child,
-                                      );
-                                    },
-                                    tween: Tween(begin: 1.0, end: 0.0),
-                                    duration:
-                                        Duration(milliseconds: index * 200),
-                                    child: listItem);
-                              } else {
-                                return listItem;
-                              }
-                            },
-                          ),
-                          if (widget.secondaryMenuItems != null)
-                            ListView.builder(
-                              itemCount: widget.secondaryMenuItems!.length,
-                              padding: EdgeInsets.zero,
-                              physics: BouncingScrollPhysics(),
-                              itemBuilder: (context, index) {
-                                FocusedMenuItem item =
-                                    widget.secondaryMenuItems![index];
-                                Widget listItem = GestureDetector(
-                                    onTap: () {
-                                      Navigator.pop(context);
-                                      item.onPressed();
-                                    },
-                                    child: Container(
-                                        alignment: Alignment.center,
-                                        margin:
-                                            const EdgeInsets.only(bottom: 1),
-                                        color: item.backgroundColor ??
-                                            Colors.white,
-                                        height: item.menuItemHeight ??
-                                            widget.itemExtent ??
-                                            50.0,
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 8.0, horizontal: 14),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: <Widget>[
-                                              item.title,
-                                              if (item.trailingIcon !=
-                                                  null) ...[item.trailingIcon!]
-                                            ],
-                                          ),
-                                        )));
-                                if (widget.animateMenu) {
-                                  return TweenAnimationBuilder(
-                                      builder: (context, dynamic value, child) {
-                                        return Transform(
-                                          transform:
-                                              Matrix4.rotationX(1.5708 * value),
-                                          alignment: Alignment.bottomCenter,
-                                          child: child,
-                                        );
-                                      },
-                                      tween: Tween(begin: 1.0, end: 0.0),
-                                      duration:
-                                          Duration(milliseconds: index * 200),
-                                      child: listItem);
-                                } else {
-                                  return listItem;
-                                }
-                              },
-                            ),
-                        ]),
+                    child: Container(
+                      key: widgetKey,
+                      child: widget.menuItems,
+                    ),
                   ),
                 ),
               ),
