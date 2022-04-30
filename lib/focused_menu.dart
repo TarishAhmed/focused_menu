@@ -21,6 +21,8 @@ class FocusedMenuHolder extends StatefulWidget {
   final double? menuOffset;
   final double? maxMenuHeight;
   final FocusedMenuPages? jumpToPage;
+  final bool enabled;
+  final bool allowBothTapLongPress;
 
   /// Open with tap insted of long press.
   final bool openWithTap;
@@ -42,7 +44,7 @@ class FocusedMenuHolder extends StatefulWidget {
       this.menuOffset,
       this.maxMenuHeight,
       this.openWithTap = false,
-      this.jumpToPage})
+      this.jumpToPage, this.enabled = true, this.allowBothTapLongPress = false})
       : super(key: key);
 
   @override
@@ -69,17 +71,18 @@ class _FocusedMenuHolderState extends State<FocusedMenuHolder> {
   Widget build(BuildContext context) {
     return GestureDetector(
         key: containerKey,
-        onTap: () async {
+        onTap: widget.enabled?() async {
           widget.onPressed();
-          if (widget.openWithTap) {
+          if (widget.openWithTap || widget.allowBothTapLongPress) {
             await openMenu(context);
           }
-        },
-        onLongPress: () async {
-          if (!widget.openWithTap) {
+        }:(){},
+        onLongPress: widget.enabled?() async {
+          widget.onPressed();
+          if (!widget.openWithTap || widget.allowBothTapLongPress) {
             await openMenu(context);
           }
-        },
+        }:(){},
         child: widget.child);
   }
 
