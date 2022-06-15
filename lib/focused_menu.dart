@@ -166,7 +166,7 @@ class _FocusedMenuDetailsState extends State<FocusedMenuDetails> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance?.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_pageController.hasClients && widget.secondaryMenuItems != null) {
         _pageController.animateToPage(widget.jumpToPage!.index,
             duration: Duration(milliseconds: 400), curve: Curves.easeInOut);
