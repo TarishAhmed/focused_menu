@@ -335,9 +335,12 @@ class _FocusedMenuDetailsState extends State<FocusedMenuDetails> {
                                     },
                                     child: Container(
                                         alignment: Alignment.center,
-
-                                        color: item.backgroundColor ??
-                                            Colors.white,
+                                        decoration: BoxDecoration(
+                                            color:
+                                            item.backgroundColor ?? Colors.white,
+                                            border: Border.all(
+                                              color: Colors.white, width: 0,
+                                            )),
                                         height: item.menuItemHeight ??
                                             widget.itemExtent ??
                                             50.0,
