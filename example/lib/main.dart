@@ -104,8 +104,13 @@ class _MyHomePageState extends State<MyHomePage> {
                             blurBackgroundColor: Colors.black54,
                             bottomOffsetHeight: 100,
                             jumpToPage: currentPage,
-                            menuItems: Text('hello'),
-                            onPressed: (){},
+                            menuItems: [
+                              FocusedMenuItem(
+                                  title: Text('hello'), onPressed: () {}),
+                              FocusedMenuItem(
+                                  title: Text('hi'), onPressed: () {})
+                            ],
+                            onPressed: () {},
                             child: Card(
                               child: Column(
                                 children: <Widget>[

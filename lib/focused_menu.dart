@@ -248,7 +248,7 @@ class _FocusedMenuDetailsState extends State<FocusedMenuDetails> {
                   height: menuHeight,
                   decoration: widget.menuBoxDecoration ??
                       BoxDecoration(
-                          color: Colors.grey.shade200,
+                          color: Colors.white,
                           borderRadius:
                               const BorderRadius.all(Radius.circular(5.0)),
                           boxShadow: [
@@ -276,9 +276,14 @@ class _FocusedMenuDetailsState extends State<FocusedMenuDetails> {
                                   },
                                   child: Container(
                                       alignment: Alignment.center,
-                                      margin: const EdgeInsets.only(bottom: 1),
-                                      color:
+                                      // margin: const EdgeInsets.only(bottom: 1),
+                                      decoration: BoxDecoration(
+                                          color:
                                           item.backgroundColor ?? Colors.white,
+                                          border: Border.all(
+                                              color: Colors.white, width: 0,
+                                          )),
+
                                       height: item.menuItemHeight ??
                                           widget.itemExtent ??
                                           50.0,
@@ -330,8 +335,7 @@ class _FocusedMenuDetailsState extends State<FocusedMenuDetails> {
                                     },
                                     child: Container(
                                         alignment: Alignment.center,
-                                        margin:
-                                            const EdgeInsets.only(bottom: 1),
+
                                         color: item.backgroundColor ??
                                             Colors.white,
                                         height: item.menuItemHeight ??
