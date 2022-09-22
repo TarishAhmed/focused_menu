@@ -1,6 +1,7 @@
 library focused_menu;
 
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:focused_menu/modals.dart';
@@ -44,7 +45,9 @@ class FocusedMenuHolder extends StatefulWidget {
       this.menuOffset,
       this.maxMenuHeight,
       this.openWithTap = false,
-      this.jumpToPage, this.enabled = true, this.allowBothTapLongPress = false})
+      this.jumpToPage,
+      this.enabled = true,
+      this.allowBothTapLongPress = false})
       : super(key: key);
 
   @override
@@ -71,18 +74,22 @@ class _FocusedMenuHolderState extends State<FocusedMenuHolder> {
   Widget build(BuildContext context) {
     return GestureDetector(
         key: containerKey,
-        onTap: widget.enabled?() async {
-          widget.onPressed();
-          if (widget.openWithTap || widget.allowBothTapLongPress) {
-            await openMenu(context);
-          }
-        }:(){},
-        onLongPress: widget.enabled?() async {
-          widget.onPressed();
-          if (!widget.openWithTap || widget.allowBothTapLongPress) {
-            await openMenu(context);
-          }
-        }:(){},
+        onTap: widget.enabled
+            ? () async {
+                widget.onPressed();
+                if (widget.openWithTap || widget.allowBothTapLongPress) {
+                  await openMenu(context);
+                }
+              }
+            : () {},
+        onLongPress: widget.enabled
+            ? () async {
+                widget.onPressed();
+                if (!widget.openWithTap || widget.allowBothTapLongPress) {
+                  await openMenu(context);
+                }
+              }
+            : () {},
         child: widget.child);
   }
 
@@ -278,12 +285,12 @@ class _FocusedMenuDetailsState extends State<FocusedMenuDetails> {
                                       alignment: Alignment.center,
                                       // margin: const EdgeInsets.only(bottom: 1),
                                       decoration: BoxDecoration(
-                                          color:
-                                          item.backgroundColor ?? Colors.white,
+                                          color: item.backgroundColor ??
+                                              Colors.white,
                                           border: Border.all(
-                                              color: Colors.white, width: 0,
+                                            color: Colors.white,
+                                            width: 0,
                                           )),
-
                                       height: item.menuItemHeight ??
                                           widget.itemExtent ??
                                           50.0,
@@ -336,10 +343,11 @@ class _FocusedMenuDetailsState extends State<FocusedMenuDetails> {
                                     child: Container(
                                         alignment: Alignment.center,
                                         decoration: BoxDecoration(
-                                            color:
-                                            item.backgroundColor ?? Colors.white,
+                                            color: item.backgroundColor ??
+                                                Colors.white,
                                             border: Border.all(
-                                              color: Colors.white, width: 0,
+                                              color: Colors.white,
+                                              width: 0,
                                             )),
                                         height: item.menuItemHeight ??
                                             widget.itemExtent ??
